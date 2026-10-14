@@ -16,7 +16,7 @@ async def get_all_channels_from_site(page):
     print(">>> [1/3] Поиск списка всех каналов на сайте...", flush=True)
     try:
         # wait_until="domcontentloaded" стабильнее, чем "commit"
-        await page.goto("https://smotru.tv/", wait_until="domcontentloaded", timeout=60000)
+        await page.goto("https://live.viks.tv/tv3/", wait_until="domcontentloaded", timeout=60000)
         await asyncio.sleep(5)
         await scroll_page(page)
         found = {}
@@ -29,7 +29,7 @@ async def get_all_channels_from_site(page):
                     # ИСПРАВЛЕНО: Сначала переводим в верхний регистр строку, а потом чистим/режем, если надо
                     clean = name.strip().upper() 
                     if clean and (".html" in url or "/public/" in url):
-                        full_url = url if url.startswith("http") else f"https://smotru.tv/{url}"
+                        full_url = url if url.startswith("http") else f"https://live.viks.tv{url}"
                         if clean not in found: 
                             found[clean] = full_url
             except: 
@@ -42,21 +42,17 @@ async def get_all_channels_from_site(page):
 
 async def get_tokens_and_make_playlist():
     MY_CHANNELS = {
-        "РОССИЯ 1": "https://smotru.tv/rossiya-1.html",
-        "РЕН ТВ": "https://smotru.tv/ren.html",
-        "ТНТ": "https://smotru.tv/tnt.html",
-        "СТС": "https://smotru.tv/sts.html",
-        "ПЕРВЫЙ КАНАЛ": "https://smotru.tv/1tv.html",
-        "НТВ": "https://smotru.tv/ntv.html",
-        "ПЯТНИЦА": "https://smotru.tv/pyatnica.html",
-        "ТВЦ": "https://smotru.tv/tvc.html",
-        "МИР": "https://smotru.tv/mir.html",
-        "СПАС": "https://smotru.tv/spas.html",
-        "КУЛЬТУРА": "https://smotru.tv/kultura.html",
-        "ДОМ КИНО": "https://smotru.tv/dom-kino.html",
-        "ДЕТСКИЙ": "https://smotru.tv/detskiy.html",
-        "МУЗЫКА ПЕРВОГО": "https://smotru.tv/muzika-pervogo.html"
-        
+        "РОССИЯ 1": "https://live.viks.tv/102407-rossiya1_tv.html",
+        "РЕН ТВ": "https://live.viks.tv/026722-ren-tv.html",
+        "НТВ": "https://viks.tv",
+        "ПЕРВЫЙ КАНАЛ": "https://viks.tv",
+        "РОССИЯ 24": "https://viks.tv",
+        "РТР ПЛАНЕТА": "https://viks.tv",
+        "КАНАЛ Ю": "https://viks.tv",
+        "ТНТ": "https://viks.tv",
+        "ЗВЕЗДА": "https://viks.tv",
+        "СТС": "https://viks.tv",
+        "ТВЦ": "https://viks.tv"
     }
     
     async def scroll_page(page):
@@ -91,7 +87,7 @@ async def get_tokens_and_make_playlist():
         print(f"\n>>> [3/3] Сбор прямых ссылок (Лимит: 60)...", flush=True)
         results = []
         for name, url in list(MY_CHANNELS.items())[:60]:
-            if url == "https://smotru.tv/": # Пропускаем заглушки, если они не спарсились нормально
+            if url == "https://viks.tv": # Пропускаем заглушки, если они не спарсились нормально
                 continue
                 
             ch_page = await context.new_page()
@@ -139,7 +135,7 @@ async def get_tokens_and_make_playlist():
                 f.write("#EXTM3U\n\n")
                 for n, l in results:
                     f.write(f'#EXTINF:-1, {n}\n')
-                    h = f"|Referer=https://smotru.tv/&User-Agent={USER_AGENT_STRING}"
+                    h = f"|Referer=https://live.viks.tv&User-Agent={USER_AGENT_STRING}"
                     f.write(f"{l}{h}\n\n")
             print(f"\n>>> ГОТОВО! Плейлист {filename} создан.")
 
@@ -147,5 +143,7 @@ async def get_tokens_and_make_playlist():
 
 if __name__ == "__main__":
     asyncio.run(get_tokens_and_make_playlist())
+
+
 
 
