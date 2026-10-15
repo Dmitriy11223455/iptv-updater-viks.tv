@@ -66,7 +66,7 @@ async def get_tokens_and_make_playlist():
         print(f">>> [2/3] Запуск браузера (GitHub Mode: {is_github})...", flush=True)
         
         browser = await p.chromium.launch(
-            headless=False,
+            headless=True,
             channel="chrome",
             args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
         )
