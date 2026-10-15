@@ -66,6 +66,7 @@ async def get_tokens_and_make_playlist():
         
         browser = await p.chromium.launch(
             headless=True,
+            channel="chrome",
             args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
         )
         
