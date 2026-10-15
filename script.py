@@ -16,7 +16,7 @@ async def get_all_channels_from_site(page):
     print(">>> [1/3] Поиск списка всех каналов на сайте...", flush=True)
     try:
         # wait_until="domcontentloaded" стабильнее, чем "commit"
-        await page.goto("https://smotru.tv/", wait_until="domcontentloaded", timeout=60000)
+        await page.goto("https://live.viks.tv/", wait_until="domcontentloaded", timeout=60000)
         await asyncio.sleep(5)
         await scroll_page(page)
         found = {}
