@@ -128,7 +128,6 @@ async def get_tokens_and_make_playlist():
                 f.write("#EXTM3U\n\n")
                 for n, l in results:
                     f.write(f'#EXTINF:-1, {n}\n')
-                    h = f"|Referer=https://ip.ontivi.net/&User-Agent={USER_AGENT_STRING}"
                     f.write(f"{l}{h}\n\n")
             print(f"\n>>> ГОТОВО! Плейлист {filename} создан.")
 
