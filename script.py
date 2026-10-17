@@ -41,7 +41,7 @@ async def get_all_channels_from_site(page):
 async def get_tokens_and_make_playlist():
     # Базовый список приоритетных каналов
     MY_CHANNELS = {
-        "РОССИЯ 1": "https://ip.ontivi.net094922-rossiya-1tv.html",
+        "РОССИЯ 1": "https://ip.ontivi.net/094922-rossiya-1tv.html",
         "РЕН ТВ": "https://viks.tv",
         "НТВ": "https://ontivi.net029821-ntv.html",
         "ПЕРВЫЙ КАНАЛ": "https://ip.ontivi.net051810-pervyy-kanal.html"
