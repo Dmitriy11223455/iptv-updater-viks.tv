@@ -41,9 +41,9 @@ async def get_all_channels_from_site(page):
 async def get_tokens_and_make_playlist():
     # Базовый список приоритетных каналов
     MY_CHANNELS = {
-        "РОССИЯ 1": "https://ip.ontivi.net/094922-rossiya-1tv.html",
+        "РОССИЯ 1": "https://ip.ontivi.net-094922-rossiya-1tv.html",
         "РЕН ТВ": "https://viks.tv",
-        "НТВ": "https://ontivi.net029821-ntv.html",
+        "НТВ": "https://ip.ontivi.net029821-ntv.html",
         "ПЕРВЫЙ КАНАЛ": "https://ip.ontivi.net051810-pervyy-kanal.html"
     }
 
@@ -119,42 +119,39 @@ async def get_tokens_and_make_playlist():
             finally:
                 await ch_page.close()
 
-        # БЛОК ГЕНЕРАЦИИ ПЕРСОНАЛЬНЫХ ПЛЕЙЛИСТОВ С ПРОКСИ
+        # БЛОК ГЕНЕРАЦИИ ПЛЕЙЛИСТОВ ДЛЯ GITHUB
         if results:
-            # ТУТ ВПИСЫВАЮТСЯ ВАШИ ЛЮДИ И ССЫЛКИ НА ИХ ПЕРСОНАЛЬНЫЕ РАБОЧИЕ ВОРКЕРЫ
+            # ТУТ ВПИШИТЕ ИМЕНА ВАШИХ ЛЮДЕЙ И ССЫЛКИ НА ИХ ПЕРСОНАЛЬНЫЕ РАБОЧИЕ ВОРКЕРЫ
             PROXIES = {
-                "ivan": "https://silent-king-7bd4.vbarishnik50.workers.dev/?url="
-                #"alex": "https://workers.dev",
-                #"dmitry": "https://workers.dev",
-                #"sister": "https://workers.dev"
+                "ivan": "https://silent-king-7bd4.vbarishnik50.workers.dev/?url=",
+                "alex": "https://workers.dev",
+                "dmitry": "https://workers.dev",
+                "sister": "https://workers.dev"
             }
 
-            output_dir = os.path.join(os.path.dirname(os.path.abspath(file)), "playlists")
+            # Создаем или используем папку playlists в репозитории
+            output_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "playlists")
             os.makedirs(output_dir, exist_ok=True)
-
-            print(f"\n>>> [4/4] Воркер-генерация персональных плейлистов...", flush=True)
+            print(f"\n>>> [4/4] Сохранение плейлистов в папку: {output_dir}", flush=True)
 
             for username, worker_url in PROXIES.items():
                 filename = f"playlist_{username}.m3u"
+                full_path = os.path.join(output_dir, filename)
                 
-                with open(filename, "w", encoding="utf-8") as f:
+                with open(full_path, "w", encoding="utf-8") as f:
                     f.write("#EXTM3U\n\n")
                     
                     for channel_name, stream_url in results:
-                        # Записываем правильное имя канала
                         f.write(f'#EXTINF:-1, {channel_name}\n')
-                        
-                        # Экранируем спецсимволы в стрим-ссылке для безопасной передачи через GET
                         encoded_stream = urllib.parse.quote_plus(stream_url)
                         proxy_url = f"{worker_url}?stream={encoded_stream}"
-                        
                         f.write(f"{proxy_url}\n\n")
                         
-                print(f"[+] Сгенерирован плейлист для: {username.upper()} -> файл: {filename}")
+                print(f"[+] Создан файл для коммита: {full_path}")
                 
-            print(f"\n>>> СБОРКА ЗАВЕРШЕНА! Всего создано файлов: {len(PROXIES)}")
+            print(f"\n>>> СБОРКА ЗАВЕРШЕНА! Подготовлено файлов: {len(PROXIES)}")
         else:
-            print("\n[!] Ошибка: Не удалось перехватить видео-потоки.")
+            print("\n[!] Ошибка: Не удалось перехватить видео-потоки. GitHub Action не обновит файлы.")
 
         await browser.close()
 
