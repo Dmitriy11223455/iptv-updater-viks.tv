@@ -15,7 +15,7 @@ async def scroll_page(page):
 async def get_all_channels_from_site(page):
     print(">>> [1/3] Поиск списка всех каналов на сайте...", flush=True)
     try:
-        await page.goto("https://ontivi.net", wait_until="domcontentloaded", timeout=60000)
+        await page.goto("https://ip.ontivi.net", wait_until="domcontentloaded", timeout=60000)
         await asyncio.sleep(4)
         await scroll_page(page)
         found = {}
