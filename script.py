@@ -41,10 +41,10 @@ async def get_all_channels_from_site(page):
 async def get_tokens_and_make_playlist():
     # Базовый список приоритетных каналов
     MY_CHANNELS = {
-        "РОССИЯ 1": "https://ontivi.net094922-rossiya-1tv.html",
+        "РОССИЯ 1": "https://ip.ontivi.net094922-rossiya-1tv.html",
         "РЕН ТВ": "https://viks.tv",
         "НТВ": "https://ontivi.net029821-ntv.html",
-        "ПЕРВЫЙ КАНАЛ": "https://ontivi.net051810-pervyy-kanal.html"
+        "ПЕРВЫЙ КАНАЛ": "https://ip.ontivi.net051810-pervyy-kanal.html"
     }
 
     async with async_playwright() as p:
@@ -76,7 +76,7 @@ async def get_tokens_and_make_playlist():
         results = []
         
         for name, url in list(MY_CHANNELS.items())[:60]:
-            if url == "https://ontivi.net":
+            if url == "https://ip.ontivi.net":
                 continue
                 
             ch_page = await context.new_page()
