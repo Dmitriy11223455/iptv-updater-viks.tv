@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import os
 import random
+import urllib.parse
 from playwright.async_api import async_playwright
 
 USER_AGENT_STRING = 'Mozilla/5.0 (Linux; Android 16; Pixel 10) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/155.0.0.0 Mobile Safari/537.36'
@@ -9,15 +10,13 @@ USER_AGENT_STRING = 'Mozilla/5.0 (Linux; Android 16; Pixel 10) AppleWebKit/537.3
 async def scroll_page(page):
     for _ in range(3):
         await page.mouse.wheel(560, 300)
-        await asyncio.sleep(2)
-        
+        await asyncio.sleep(1.5)
 
 async def get_all_channels_from_site(page):
     print(">>> [1/3] Поиск списка всех каналов на сайте...", flush=True)
     try:
-        # wait_until="domcontentloaded" стабильнее, чем "commit"
-        await page.goto("https://ip.ontivi.net/", wait_until="domcontentloaded", timeout=60000)
-        await asyncio.sleep(5)
+        await page.goto("https://ontivi.net", wait_until="domcontentloaded", timeout=60000)
+        await asyncio.sleep(4)
         await scroll_page(page)
         found = {}
         links = await page.query_selector_all("a")
@@ -26,10 +25,9 @@ async def get_all_channels_from_site(page):
                 url = await link.get_attribute("href")
                 name = await link.inner_text()
                 if url and name:
-                    # ИСПРАВЛЕНО: Сначала переводим в верхний регистр строку, а потом чистим/режем, если надо
                     clean = name.strip().upper() 
                     if clean and (".html" in url or "/public/" in url):
-                        full_url = url if url.startswith("http") else f"https://ip.ontivi.net/{url}"
+                        full_url = url if url.startswith("http") else f"https://ontivi.net{url}"
                         if clean not in found: 
                             found[clean] = full_url
             except: 
@@ -37,21 +35,17 @@ async def get_all_channels_from_site(page):
         print(f"[+] Найдено каналов на сайте: {len(found)}")
         return found
     except Exception as e:
-        print(f"[!] Ошибка парсинга: {e}", flush=True)
+        print(f"[!] Ошибка парсинга главной страницы: {e}", flush=True)
         return {}
 
 async def get_tokens_and_make_playlist():
+    # Базовый список приоритетных каналов
     MY_CHANNELS = {
-        "РОССИЯ 1": "https://ip.ontivi.net/094922-rossiya-1tv.html",
-        "РЕН ТВ": "https://live.viks.tv/026722-ren-tv.html",
-        "НТВ": "https://ip.ontivi.net/029821-ntv.html",
-        "ПЕРВЫЙ КАНАЛ": "https://ip.ontivi.net/051810-pervyy-kanal.html"
+        "РОССИЯ 1": "https://ontivi.net094922-rossiya-1tv.html",
+        "РЕН ТВ": "https://viks.tv",
+        "НТВ": "https://ontivi.net029821-ntv.html",
+        "ПЕРВЫЙ КАНАЛ": "https://ontivi.net051810-pervyy-kanal.html"
     }
-    
-    async def scroll_page(page):
-        for _ in range(3):
-            await page.mouse.wheel(560, 300)
-            await asyncio.sleep(2)
 
     async with async_playwright() as p:
         is_github = os.getenv('GITHUB_ACTIONS') == 'true'
@@ -59,17 +53,17 @@ async def get_tokens_and_make_playlist():
         
         browser = await p.chromium.launch(
             headless=True,
-            channel = 'chrome',
+            channel='chrome',
             args=['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage']
         )
         
-        # ИСПРАВЛЕНО: Удален extra_http_headers, ломающий загрузку CSS-стилей
         context = await browser.new_context(
             user_agent=USER_AGENT_STRING,
             viewport={'width': 1280, 'height': 720}
         )
         await context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
 
+        # Собираем остальные каналы с сайта
         temp_page = await context.new_page()
         SCRAPED = await get_all_channels_from_site(temp_page)
         await temp_page.close()
@@ -80,8 +74,9 @@ async def get_tokens_and_make_playlist():
 
         print(f"\n>>> [3/3] Сбор прямых ссылок (Лимит: 60)...", flush=True)
         results = []
+        
         for name, url in list(MY_CHANNELS.items())[:60]:
-            if url == "https://ip.ontivi.net/": # Пропускаем заглушки, если они не спарсились нормально
+            if url == "https://ontivi.net":
                 continue
                 
             ch_page = await context.new_page()
@@ -89,20 +84,21 @@ async def get_tokens_and_make_playlist():
 
             async def handle_request(request):
                 u = request.url
-                if ".m3u8" in u and not any(x in u for x in ["ads", "yandex", "metrika", "telemetry"]):
+                if (".m3u8" in u or ".mpd" in u) and not any(x in u for x in ["ads", "yandex", "metrika", "telemetry"]):
                     captured_urls.append(u)
 
             ch_page.on("request", handle_request)
             print(f"[*] {name:.<25}", end=" ", flush=True)
 
             try:
-                await ch_page.goto(url, wait_until="domcontentloaded", timeout=60000)
-                await asyncio.sleep(12) 
+                await ch_page.goto(url, wait_until="domcontentloaded", timeout=45000)
+                await asyncio.sleep(6) 
                 
-                # Клик по плееру для инициализации потока, если автоматика не сработала
+                # Симулируем активность кликом по плееру
                 await ch_page.mouse.click(640, 450)
                 
-                for _ in range(25):
+                # Ожидание ссылки в логах сети
+                for _ in range(10):
                     if captured_urls: break
                     await asyncio.sleep(1)
 
@@ -123,23 +119,41 @@ async def get_tokens_and_make_playlist():
             finally:
                 await ch_page.close()
 
+        # БЛОК ГЕНЕРАЦИИ ПЕРСОНАЛЬНЫХ ПЛЕЙЛИСТОВ С ПРОКСИ
         if results:
-            filename = "playlist.m3u"
-            with open(filename, "w", encoding="utf-8") as f:
-                f.write("#EXTM3U\n\n")
-                for n, l in results:
-                    f.write(f'#EXTINF:-1, {n}\n')
-                    h = f"|Referer=https://ip.ontivi.net/&User-Agent={USER_AGENT_STRING}"
-                    f.write(f"{l}{h}\n\n")
-            print(f"\n>>> ГОТОВО! Плейлист {filename} создан.")
+            # ТУТ ВПИСЫВАЮТСЯ ВАШИ ЛЮДИ И ССЫЛКИ НА ИХ ПЕРСОНАЛЬНЫЕ РАБОЧИЕ ВОРКЕРЫ
+            PROXIES = {
+                "ivan": "https://workers.dev",
+                "alex": "https://workers.dev",
+                "dmitry": "https://workers.dev",
+                "sister": "https://workers.dev"
+            }
+
+            print(f"\n>>> [4/4] Воркер-генерация персональных плейлистов...", flush=True)
+
+            for username, worker_url in PROXIES.items():
+                filename = f"playlist_{username}.m3u"
+                
+                with open(filename, "w", encoding="utf-8") as f:
+                    f.write("#EXTM3U\n\n")
+                    
+                    for channel_name, stream_url in results:
+                        # Записываем правильное имя канала
+                        f.write(f'#EXTINF:-1, {channel_name}\n')
+                        
+                        # Экранируем спецсимволы в стрим-ссылке для безопасной передачи через GET
+                        encoded_stream = urllib.parse.quote_plus(stream_url)
+                        proxy_url = f"{worker_url}?stream={encoded_stream}"
+                        
+                        f.write(f"{proxy_url}\n\n")
+                        
+                print(f"[+] Сгенерирован плейлист для: {username.upper()} -> файл: {filename}")
+                
+            print(f"\n>>> СБОРКА ЗАВЕРШЕНА! Всего создано файлов: {len(PROXIES)}")
+        else:
+            print("\n[!] Ошибка: Не удалось перехватить видео-потоки.")
 
         await browser.close()
 
 if __name__ == "__main__":
     asyncio.run(get_tokens_and_make_playlist())
-
-
-
-
-
-
