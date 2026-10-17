@@ -123,10 +123,10 @@ async def get_tokens_and_make_playlist():
         if results:
             # ТУТ ВПИСЫВАЮТСЯ ВАШИ ЛЮДИ И ССЫЛКИ НА ИХ ПЕРСОНАЛЬНЫЕ РАБОЧИЕ ВОРКЕРЫ
             PROXIES = {
-                "ivan": "https://workers.dev",
-                "alex": "https://workers.dev",
-                "dmitry": "https://workers.dev",
-                "sister": "https://workers.dev"
+                "ivan": "https://silent-king-7bd4.vbarishnik50.workers.dev/?url="
+                #"alex": "https://workers.dev",
+                #"dmitry": "https://workers.dev",
+                #"sister": "https://workers.dev"
             }
 
             print(f"\n>>> [4/4] Воркер-генерация персональных плейлистов...", flush=True)
