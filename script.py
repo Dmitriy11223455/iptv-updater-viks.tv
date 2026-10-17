@@ -129,6 +129,9 @@ async def get_tokens_and_make_playlist():
                 #"sister": "https://workers.dev"
             }
 
+            output_dir = os.path.join(os.path.dirname(os.path.abspath(file)), "playlists")
+            os.makedirs(output_dir, exist_ok=True)
+
             print(f"\n>>> [4/4] Воркер-генерация персональных плейлистов...", flush=True)
 
             for username, worker_url in PROXIES.items():
